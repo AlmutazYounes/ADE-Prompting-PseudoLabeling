@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+
+# Environment Variables
+.env
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Project-specific
+# Model files
+modernbert_ade_extractor_final/*
+comparison_results/*
+bio_clinicalbert_ade_extractor/
+bio_clinicalbert_ade_extractor/*
+best_modernbert_ade_model/
+*.pt
+*.bin
+*.h5
+*.onnx
+*.pb
+*.savedmodel
+model_state_dict.bin
+pytorch_model.bin
+config.json
+
+# Output files and cache
+analysis/pipeline_outputs/direct/*.jsonl
+analysis/pipeline_outputs/direct/*.json
+analysis/pipeline_outputs/dspy/*.jsonl
+analysis/pipeline_outputs/dspy/*.json
+*.cache
+.dspy/
+.cache/
+
+# Large files
+*.tar.gz
+*.zip
+*.7z
+*.rar
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# But keep directory structure with .gitkeep
+!data/.gitkeep
+!analysis/.gitkeep
+!analysis/pipeline_outputs/.gitkeep
+!analysis/pipeline_outputs/direct/.gitkeep
+!analysis/pipeline_outputs/dspy/.gitkeep
+!modernbert_ade_extractor_final/.gitkeep
