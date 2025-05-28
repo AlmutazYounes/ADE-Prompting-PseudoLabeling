@@ -33,8 +33,8 @@ def run_data_pipeline(mode):
     extractor = initialize_extractor(mode=mode, model_name=LLM_MODEL_NAME)
     ade_processor = ADEDatasetProcessor(extractor=extractor)
     extracted_data = ade_processor.extract_ades_batched(notes)
-    logger.info(f"Step 1: Extracted ADEs for {len(extracted_data)} notes")
-    save_to_jsonl(extracted_data, step_1_output)
+    # logger.info(f"Step 1: Extracted ADEs for {len(extracted_data)} notes")
+    # save_to_jsonl(extracted_data, step_1_output)
 
     # Prepare NER data with raw text and entity spans
     ner_data = ade_processor.prepare_ner_data(extracted_data)
@@ -45,7 +45,7 @@ def run_data_pipeline(mode):
 # ==================== MAIN ====================
 def main():
     run_data_pipeline("direct")
-    # run_data_pipeline("dspy")
+    run_data_pipeline("dspy")
     logger.info("\nAll training and extraction data generated successfully.")
 
 if __name__ == "__main__":

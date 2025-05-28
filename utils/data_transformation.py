@@ -71,8 +71,8 @@ def generate_gold_standard(ade_relations, output_path: str) -> List[Dict]:
         })
     
     # Save to output
-    save_to_jsonl(formatted, output_path)
-    logger.info(f"Step 1: Saved {len(formatted)} gold standard records")
+    # save_to_jsonl(formatted, output_path)
+    # logger.info(f"Step 1: Saved {len(formatted)} gold standard records")
     
     return formatted
 

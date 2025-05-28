@@ -31,7 +31,7 @@ for directory in [DATA_DIR, DIRECT_DATA_DIR, DSPY_DATA_DIR, GOLD_DATA_DIR]:
 # ==================== DATA SETTINGS ====================
 INPUT_FILE = os.path.join(DATA_DIR, 'train.txt')
 MAX_NOTES = 5000000
-MAX_TEST_NOTES = 10
+MAX_TEST_NOTES = 500
 
 # Gold data processing steps
 STEP_1_GOLD_STANDARD = os.path.join(GOLD_DATA_DIR, "gold_extracted_data.jsonl")
@@ -47,7 +47,7 @@ LLM_MODEL_NAME = "gpt-4o-mini"
 
 # --- BERT ---
 BERT_MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"  # Default, can be changed
-BERT_MAX_LENGTH = 128
+BERT_MAX_LENGTH = 512
 BERT_OUTPUT_DIR = os.path.join(BASE_DIR, "bert_ade_extractor")
 
 # --- NER ---
@@ -65,7 +65,7 @@ BATCH_SIZE = 4
 MAX_WORKERS = 5
 
 # --- Training hyperparameters ---
-DEFAULT_EPOCHS = 1
+DEFAULT_EPOCHS = 10
 DEFAULT_LEARNING_RATE = 5e-5
 
 # --- HuggingFace Trainer Settings ---
