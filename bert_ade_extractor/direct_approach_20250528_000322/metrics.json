@@ -1,0 +1,25 @@
+{
+  "gold_results": {
+    "loss": 0.37659308314323425,
+    "ADE": {
+      "precision": 0.6122448979591837,
+      "recall": 0.6818181818181818,
+      "f1": 0.6451612903225806,
+      "number": 132
+    },
+    "DRUG": {
+      "precision": 0.819672131147541,
+      "recall": 0.9090909090909091,
+      "f1": 0.8620689655172413,
+      "number": 110
+    },
+    "overall_precision": 0.7063197026022305,
+    "overall_recall": 0.7851239669421488,
+    "overall_f1": 0.7436399217221136,
+    "overall_accuracy": 0.8980460132366845,
+    "runtime": 1.2889,
+    "samples_per_second": 77.583,
+    "steps_per_second": 19.396,
+    "epoch": 1.0
+  }
+}
