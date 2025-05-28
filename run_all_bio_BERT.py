@@ -35,6 +35,7 @@ from utils.data_transformation import load_from_jsonl
 from utils.extraction import initialize_extractor
 from utils.evaluation import calculate_entity_metrics
 from utils.dataset import ADEDatasetProcessor
+import evaluate  # <-- Add this import for seqeval
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -48,32 +49,28 @@ def find_latest_bio_clinicalbert_models():
     
     if direct_models:
         latest_direct = sorted(direct_models, key=os.path.getctime, reverse=True)[0]
-        model_path = os.path.join(latest_direct, "model")
         
-        # Check if model directory exists, if not use the parent directory
-        if not os.path.exists(model_path):
-            model_path = latest_direct
-            
         try:
-            # Try to load the model config first to check if it exists
-            config_path = os.path.join(latest_direct, "model_config.json")
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    model_config = json.load(f)
-                # Initialize base model with label mappings
-                model = AutoModelForTokenClassification.from_pretrained(
-                    BERT_MODEL_NAME, 
-                    num_labels=len(model_config["id2label"]), 
-                    id2label=model_config["id2label"],
-                    label2id=model_config["label2id"]
-                )
+            # First, try to load the complete saved model (this includes weights)
+            # HuggingFace Trainer saves the model directly in the output directory
+            if os.path.exists(os.path.join(latest_direct, "pytorch_model.bin")) or \
+               os.path.exists(os.path.join(latest_direct, "model.safetensors")):
+                # Load the complete fine-tuned model with weights
+                model = AutoModelForTokenClassification.from_pretrained(latest_direct)
+                tokenizer = AutoTokenizer.from_pretrained(latest_direct)
+                models["direct"] = (model, tokenizer, latest_direct)
+                logger.info(f"Loaded Bio_ClinicalBERT (direct) with weights from: {latest_direct}")
             else:
-                # Fall back to loading a saved model if it exists
-                model = AutoModelForTokenClassification.from_pretrained(model_path)
-                
-            tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL_NAME)
-            models["direct"] = (model, tokenizer, latest_direct)
-            logger.info(f"Loaded Bio_ClinicalBERT (direct) from: {latest_direct}")
+                # Fallback: check if there's a model subdirectory
+                model_path = os.path.join(latest_direct, "model")
+                if os.path.exists(model_path):
+                    model = AutoModelForTokenClassification.from_pretrained(model_path)
+                    tokenizer = AutoTokenizer.from_pretrained(model_path)
+                    models["direct"] = (model, tokenizer, latest_direct)
+                    logger.info(f"Loaded Bio_ClinicalBERT (direct) from model subdirectory: {model_path}")
+                else:
+                    logger.error(f"Could not find model weights in {latest_direct}")
+                    
         except Exception as e:
             logger.error(f"Error loading Bio_ClinicalBERT (direct): {e}")
     else:
@@ -81,32 +78,27 @@ def find_latest_bio_clinicalbert_models():
         
     if dspy_models:
         latest_dspy = sorted(dspy_models, key=os.path.getctime, reverse=True)[0]
-        model_path = os.path.join(latest_dspy, "model")
         
-        # Check if model directory exists, if not use the parent directory
-        if not os.path.exists(model_path):
-            model_path = latest_dspy
-            
         try:
-            # Try to load the model config first to check if it exists
-            config_path = os.path.join(latest_dspy, "model_config.json")
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    model_config = json.load(f)
-                # Initialize base model with label mappings
-                model = AutoModelForTokenClassification.from_pretrained(
-                    BERT_MODEL_NAME, 
-                    num_labels=len(model_config["id2label"]), 
-                    id2label=model_config["id2label"],
-                    label2id=model_config["label2id"]
-                )
+            # First, try to load the complete saved model (this includes weights)
+            if os.path.exists(os.path.join(latest_dspy, "pytorch_model.bin")) or \
+               os.path.exists(os.path.join(latest_dspy, "model.safetensors")):
+                # Load the complete fine-tuned model with weights
+                model = AutoModelForTokenClassification.from_pretrained(latest_dspy)
+                tokenizer = AutoTokenizer.from_pretrained(latest_dspy)
+                models["dspy"] = (model, tokenizer, latest_dspy)
+                logger.info(f"Loaded Bio_ClinicalBERT (dspy) with weights from: {latest_dspy}")
             else:
-                # Fall back to loading a saved model if it exists
-                model = AutoModelForTokenClassification.from_pretrained(model_path)
-                
-            tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL_NAME)
-            models["dspy"] = (model, tokenizer, latest_dspy)
-            logger.info(f"Loaded Bio_ClinicalBERT (dspy) from: {latest_dspy}")
+                # Fallback: check if there's a model subdirectory
+                model_path = os.path.join(latest_dspy, "model")
+                if os.path.exists(model_path):
+                    model = AutoModelForTokenClassification.from_pretrained(model_path)
+                    tokenizer = AutoTokenizer.from_pretrained(model_path)
+                    models["dspy"] = (model, tokenizer, latest_dspy)
+                    logger.info(f"Loaded Bio_ClinicalBERT (dspy) from model subdirectory: {model_path}")
+                else:
+                    logger.error(f"Could not find model weights in {latest_dspy}")
+                    
         except Exception as e:
             logger.error(f"Error loading Bio_ClinicalBERT (dspy): {e}")
     else:
@@ -115,163 +107,128 @@ def find_latest_bio_clinicalbert_models():
     return models
 
 def evaluate_bio_clinicalbert_model(model, tokenizer, test_texts, gold_data):
-    """Evaluate a Bio_ClinicalBERT model on the gold standard."""
-    from torch.utils.data import DataLoader
-    from utils.dataset import ADEDataset
-    
-    # Determine device based on availability
-    device = torch.device("mps" if torch.backends.mps.is_available() else 
-                         "cuda" if torch.cuda.is_available() else "cpu")
+    """Evaluate a Bio_ClinicalBERT model on the gold standard using token-level BIO evaluation (seqeval)."""
+    seqeval = evaluate.load("seqeval")
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Using device: {device}")
-    
     model.to(device)
     model.eval()
     
-    # Process raw data to get predictions
-    results = []
+    all_pred_tags = []
+    all_gold_tags = []
     
-    for idx, gold in enumerate(tqdm(gold_data, desc="Evaluating Bio_ClinicalBERT")):
+    for idx, gold in enumerate(tqdm(gold_data, desc="Evaluating Bio_ClinicalBERT (BIO eval)")):
         text = gold["text"]
         
-        # Tokenize
-        inputs = tokenizer(text, return_tensors="pt", truncation=True, 
-                          max_length=BERT_MAX_LENGTH, padding="max_length")
-        inputs = {k: v.to(device) for k, v in inputs.items()}
+        # Use consistent tokenization for both prediction and gold alignment
+        # First tokenize for model input (with special tokens and padding)
+        model_inputs = tokenizer(
+            text, 
+            return_tensors="pt", 
+            truncation=True, 
+            max_length=BERT_MAX_LENGTH, 
+            padding="max_length"
+        )
+        model_inputs = {k: v.to(device) for k, v in model_inputs.items()}
         
-        # Get predictions
+        # Also tokenize for alignment (without special tokens, with offset mapping)
+        alignment_encoding = tokenizer(
+            text, 
+            return_offsets_mapping=True, 
+            add_special_tokens=False,
+            truncation=True,
+            max_length=BERT_MAX_LENGTH - 2  # Account for [CLS] and [SEP] tokens
+        )
+        tokens = tokenizer.convert_ids_to_tokens(alignment_encoding.input_ids)
+        offset_mapping = alignment_encoding.offset_mapping
+        
+        # Get model predictions
         with torch.no_grad():
-            outputs = model(**inputs)
+            outputs = model(**model_inputs)
             predictions = torch.argmax(outputs.logits, dim=2)[0].cpu().numpy()
-            
-        # Debug prediction distribution
-        if idx < 5:
-            pred_labels = [model.config.id2label.get(p.item()) for p in predictions if p.item() in model.config.id2label]
-            label_counts = {}
-            for label in pred_labels:
-                if label:
-                    label_counts[label] = label_counts.get(label, 0) + 1
-            logger.info(f"Prediction distribution: {label_counts}")
-            
-        # Convert predictions to entities
-        entities = []
-        current_entity = None
         
-        # Get token offsets
-        encoding = tokenizer(text, return_offsets_mapping=True)
-        offset_mapping = encoding.offset_mapping
+        # Extract predictions for actual tokens (skip [CLS] and [SEP])
+        # predictions[0] is [CLS], predictions[1:-1] are actual tokens, predictions[-1] is [SEP]
+        actual_predictions = predictions[1:len(tokens)+1]  # Skip [CLS], take only actual token predictions
         
-        for i, (pred, (start, end)) in enumerate(zip(predictions, offset_mapping)):
-            # Skip special tokens
-            if start == end:
-                continue
+        # Convert predictions to labels
+        pred_tags = []
+        for pred in actual_predictions:
+            label = model.config.id2label.get(int(pred), 'O')
+            pred_tags.append(label)
+        
+        # Generate gold tags using the same tokenization
+        gold_entities = gold.get('entities', [])
+        gold_tags = ['O'] * len(tokens)
+        
+        # Assign BIO tags based on entity spans using the same offset mapping
+        for entity in gold_entities:
+            entity_start = entity.get('start')
+            entity_end = entity.get('end')
+            entity_label = entity.get('label')
+            
+            # Find tokens that overlap with this entity
+            for i, (start, end) in enumerate(offset_mapping):
+                # Skip if token is outside entity boundaries
+                if end <= entity_start or start >= entity_end:
+                    continue
                 
-            # Get the predicted label - safely handle missing label IDs
-            label = model.config.id2label.get(pred.item())
-            if label is None:
-                continue
-                
-            # Handle entity boundaries
-            if label.startswith("B-"):
-                if current_entity:
-                    entities.append(current_entity)
-                    
-                entity_type = label[2:]  # Remove "B-" prefix
-                current_entity = {
-                    "start": start,
-                    "end": end,
-                    "label": entity_type
-                }
-            elif label.startswith("I-") and current_entity and current_entity["label"] == label[2:]:
-                # Extend the current entity
-                current_entity["end"] = end
-            elif label == "O" and current_entity:
-                entities.append(current_entity)
-                current_entity = None
-                
-        # Add the last entity if there is one
-        if current_entity:
-            entities.append(current_entity)
-            
-        # Create a record with predictions
-        pred_record = {
-            "text": text,
-            "entities": entities
-        }
+                # First token of entity gets B- prefix
+                if i == 0 or offset_mapping[i-1][1] <= entity_start:
+                    gold_tags[i] = f'B-{entity_label}'
+                else:
+                    gold_tags[i] = f'I-{entity_label}'
         
-        # Convert entities to drugs/adverse_events format for metric calculation
-        drugs = []
-        adverse_events = []
+        # Ensure both sequences have the same length
+        min_len = min(len(pred_tags), len(gold_tags))
+        pred_tags = pred_tags[:min_len]
+        gold_tags = gold_tags[:min_len]
         
-        for entity in entities:
-            entity_text = text[entity["start"]:entity["end"]]
-            if entity["label"] == "DRUG":
-                drugs.append(entity_text)
-            elif entity["label"] == "ADE":
-                adverse_events.append(entity_text)
+        all_pred_tags.append(pred_tags)
+        all_gold_tags.append(gold_tags)
         
-        pred_record_converted = {
-            "text": text,
-            "drugs": drugs,
-            "adverse_events": adverse_events
-        }
-        
-        # Also convert gold data if it's in entity format
-        gold_converted = gold
-        if "entities" in gold and "drugs" not in gold:
-            gold_drugs = []
-            gold_adverse_events = []
-            
-            for entity in gold["entities"]:
-                entity_text = text[entity["start"]:entity["end"]]
-                if entity["label"] == "DRUG":
-                    gold_drugs.append(entity_text)
-                elif entity["label"] == "ADE":
-                    gold_adverse_events.append(entity_text)
-            
-            gold_converted = {
-                "text": text,
-                "drugs": gold_drugs,
-                "adverse_events": gold_adverse_events
-            }
-        
-        # Calculate metrics
-        metrics = calculate_entity_metrics(pred_record_converted, gold_converted)
-        
-        # Debug information
-        if idx < 5:  # Only print for first few examples
-            logger.info(f"\nExample {idx+1}:")
+        if idx < 3:
+            logger.info(f"Example {idx+1}:")
             logger.info(f"Text: {text[:100]}...")
-            logger.info(f"Predicted drugs: {drugs}")
-            logger.info(f"Predicted ADEs: {adverse_events}")
-            if "drugs" in gold_converted:
-                logger.info(f"Gold drugs: {gold_converted['drugs']}")
-                logger.info(f"Gold ADEs: {gold_converted['adverse_events']}")
-            else:
-                logger.info(f"Gold entities: {gold['entities']}")
-            logger.info(f"Metrics: P={metrics['overall']['precision']:.4f}, R={metrics['overall']['recall']:.4f}, F1={metrics['overall']['f1']:.4f}")
-            logger.info(f"True positives: {metrics['overall']['true_positives']}, False positives: {metrics['overall']['false_positives']}, False negatives: {metrics['overall']['false_negatives']}")
-            
-        results.append(metrics)
-        
-    # Calculate overall metrics
-    overall_precision = sum(r['overall']['precision'] for r in results) / len(results) if results else 0
-    overall_recall = sum(r['overall']['recall'] for r in results) / len(results) if results else 0
-    overall_f1 = sum(r['overall']['f1'] for r in results) / len(results) if results else 0
-    total_tp = sum(r['overall']['true_positives'] for r in results)
-    total_fp = sum(r['overall']['false_positives'] for r in results)
-    total_fn = sum(r['overall']['false_negatives'] for r in results)
+            logger.info(f"Tokens: {tokens[:min_len]}")
+            logger.info(f"Pred tags: {pred_tags}")
+            logger.info(f"Gold tags: {gold_tags}")
+            logger.info(f"Entities in gold: {gold_entities}")
     
-    logger.info("\n========== BERT MODEL EVALUATION SUMMARY ==========")
-    logger.info(f"Evaluated {len(results)} examples")
-    logger.info(f"Overall Precision: {overall_precision:.4f}")
-    logger.info(f"Overall Recall: {overall_recall:.4f}")
-    logger.info(f"Overall F1: {overall_f1:.4f}")
-    logger.info(f"Total true positives: {total_tp}")
-    logger.info(f"Total false positives: {total_fp}")
-    logger.info(f"Total false negatives: {total_fn}")
-    logger.info("================================================\n")
-        
-    return results
+    # Compute metrics
+    results = seqeval.compute(predictions=all_pred_tags, references=all_gold_tags)
+    logger.info(f"\n========== BERT MODEL SEQEVAL EVALUATION SUMMARY ==========")
+    logger.info(f"F1: {results.get('overall_f1', 0):.4f}, Precision: {results.get('overall_precision', 0):.4f}, Recall: {results.get('overall_recall', 0):.4f}")
+    logger.info(f"================================================\n")
+    
+    # Return a list of dicts for compatibility
+    return [{
+        'overall': {
+            'precision': results.get('overall_precision', 0),
+            'recall': results.get('overall_recall', 0),
+            'f1': results.get('overall_f1', 0),
+        }
+    } for _ in range(len(all_pred_tags))]
+
+def spans_to_bio_tags(text, entities, tokenizer):
+    """Convert entity spans to BIO tag sequence for a given text using the tokenizer."""
+    encoding = tokenizer(text, return_offsets_mapping=True, add_special_tokens=False)
+    tokens = tokenizer.convert_ids_to_tokens(encoding.input_ids)
+    offset_mapping = encoding.offset_mapping
+    tags = ['O'] * len(tokens)
+    for entity in entities:
+        entity_start = entity.get('start')
+        entity_end = entity.get('end')
+        entity_label = entity.get('label')
+        for i, (start, end) in enumerate(offset_mapping):
+            if end <= entity_start or start >= entity_end:
+                continue
+            if i == 0 or offset_mapping[i-1][1] <= entity_start:
+                tags[i] = f'B-{entity_label}'
+            else:
+                tags[i] = f'I-{entity_label}'
+    return tokens, tags
+
 
 def evaluate_llm_and_dspy(test_notes, gold_data):
     """Evaluate both LLM-based approaches: Direct and DSPy using pipeline logic."""
@@ -462,19 +419,6 @@ def main():
                     "adverse_events": gold_adverse_events
                 }
             metrics = calculate_entity_metrics(pred_record_converted, gold_converted)
-            # Debug
-            if idx < 5:
-                logger.info(f"\nLLM {approach} Example {idx+1}:")
-                logger.info(f"Text: {text[:100]}...")
-                logger.info(f"Predicted drugs: {drugs}")
-                logger.info(f"Predicted ADEs: {adverse_events}")
-                if "drugs" in gold_converted:
-                    logger.info(f"Gold drugs: {gold_converted['drugs']}")
-                    logger.info(f"Gold ADEs: {gold_converted['adverse_events']}")
-                else:
-                    logger.info(f"Gold entities: {gold['entities']}")
-                logger.info(f"Metrics: P={metrics['overall']['precision']:.4f}, R={metrics['overall']['recall']:.4f}, F1={metrics['overall']['f1']:.4f}")
-                logger.info(f"True positives: {metrics['overall']['true_positives']}, False positives: {metrics['overall']['false_positives']}, False negatives: {metrics['overall']['false_negatives']}")
             results[approach].append(metrics)
     all_results["Direct LLM"] = results["direct"]
     all_results["DSPy"] = results["dspy"]
