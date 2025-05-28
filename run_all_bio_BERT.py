@@ -23,7 +23,9 @@ from transformers import AutoModelForTokenClassification, AutoTokenizer
 from tqdm import tqdm
 from datetime import datetime
 import logging
-
+import argparse
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from utils.config import (
     GOLD_STANDARD_PATH, MAX_TEST_NOTES,
     BERT_OUTPUT_DIR, BERT_MODEL_NAME, BERT_MAX_LENGTH,
@@ -348,19 +350,35 @@ def visualize_results(all_results, results_dir):
     logger.info(f"Results saved to: {results_dir}")
 
 def main():
+    parser = argparse.ArgumentParser(description="Comprehensive Bio_ClinicalBERT ADE evaluation")
+    parser.add_argument('--overwrite-llm', action='store_true', help='Force rerun of LLM and DSPy extraction (costs money)')
+    args = parser.parse_args()
+
     # Load gold standard data - use NER format
     logger.info(f"Loading gold standard NER data from {STEP_2_GOLD_NER_DATA}")
     gold_data = load_from_jsonl(STEP_2_GOLD_NER_DATA)
     gold_data = gold_data[:MAX_TEST_NOTES]
     test_notes = [entry["text"] for entry in gold_data if "text" in entry]
-    
     logger.info(f"Using {len(test_notes)} gold standard notes for evaluation")
-    
+
+    # Prepare analysis directory
+    results_dir = os.path.join("analysis", "comparison_results", \
+                            datetime.now().strftime("%Y%m%d_%H%M%S") + "_bio_clinicalbert")
+    os.makedirs(results_dir, exist_ok=True)
+
+    # Prepare persistent LLM cache directory
+    llm_cache_dir = os.path.join("analysis", "llm_cache")
+    os.makedirs(llm_cache_dir, exist_ok=True)
+    llm_direct_path = os.path.join(llm_cache_dir, "llm_direct.jsonl")
+    llm_dspy_path = os.path.join(llm_cache_dir, "llm_dspy.jsonl")
+    llm_direct_exists = os.path.exists(llm_direct_path)
+    llm_dspy_exists = os.path.exists(llm_dspy_path)
+
     # Load Bio_ClinicalBERT models
     logger.info("Loading Bio_ClinicalBERT models...")
     bio_models = find_latest_bio_clinicalbert_models()
     all_results = {}
-    
+
     # Evaluate Bio_ClinicalBERT (Direct)
     if bio_models["direct"]:
         model, tokenizer, _ = bio_models["direct"]
@@ -369,7 +387,7 @@ def main():
         all_results["Bio_ClinicalBERT (Direct)"] = results
     else:
         logger.warning("No Bio_ClinicalBERT (Direct) model found, skipping.")
-    
+
     # Evaluate Bio_ClinicalBERT (DSPy)
     if bio_models["dspy"]:
         model, tokenizer, _ = bio_models["dspy"]
@@ -378,18 +396,91 @@ def main():
         all_results["Bio_ClinicalBERT (DSPy)"] = results
     else:
         logger.warning("No Bio_ClinicalBERT (DSPy) model found, skipping.")
-    
-    # Evaluate LLM and DSPy approaches
+
+    # LLM and DSPy extraction caching (persistent across runs)
     logger.info("Evaluating LLM and DSPy approaches...")
-    llm_dspy_results = evaluate_llm_and_dspy(test_notes, gold_data)
-    all_results["Direct LLM"] = llm_dspy_results["direct"]
-    all_results["DSPy"] = llm_dspy_results["dspy"]
-    
+    if not args.overwrite_llm and llm_direct_exists and llm_dspy_exists:
+        logger.info("Loading cached LLM and DSPy extraction results from analysis/llm_cache/ ...")
+        with open(llm_direct_path, 'r') as f:
+            direct_ner = [json.loads(line) for line in f]
+        with open(llm_dspy_path, 'r') as f:
+            dspy_ner = [json.loads(line) for line in f]
+    else:
+        logger.info("Extracting ADEs using Direct approach (pipeline logic)...")
+        direct_extractor = initialize_extractor(mode="direct")
+        direct_processor = ADEDatasetProcessor(extractor=direct_extractor)
+        direct_extracted = direct_processor.extract_ades_batched(test_notes)
+        direct_ner = direct_processor.prepare_ner_data(direct_extracted)
+        # Save
+        with open(llm_direct_path, 'w') as f:
+            for rec in direct_ner:
+                f.write(json.dumps(rec) + '\n')
+
+        logger.info("Extracting ADEs using DSPy approach (pipeline logic)...")
+        dspy_extractor = initialize_extractor(mode="dspy")
+        dspy_processor = ADEDatasetProcessor(extractor=dspy_extractor)
+        dspy_extracted = dspy_processor.extract_ades_batched(test_notes)
+        dspy_ner = dspy_processor.prepare_ner_data(dspy_extracted)
+        # Save
+        with open(llm_dspy_path, 'w') as f:
+            for rec in dspy_ner:
+                f.write(json.dumps(rec) + '\n')
+
+    # Evaluate LLM and DSPy approaches
+    results = {"direct": [], "dspy": []}
+    for approach, ner_data in zip(["direct", "dspy"], [direct_ner, dspy_ner]):
+        for idx, (record, gold) in enumerate(zip(ner_data, gold_data)):
+            # Convert entities to drugs/adverse_events format for metric calculation
+            drugs = []
+            adverse_events = []
+            text = record["text"]
+            for entity in record["entities"]:
+                entity_text = text[entity["start"]:entity["end"]]
+                if entity["label"] == "DRUG":
+                    drugs.append(entity_text)
+                elif entity["label"] == "ADE":
+                    adverse_events.append(entity_text)
+            pred_record_converted = {
+                "text": text,
+                "drugs": drugs,
+                "adverse_events": adverse_events
+            }
+            # Also convert gold data if it's in entity format
+            gold_converted = gold
+            if "entities" in gold and "drugs" not in gold:
+                gold_drugs = []
+                gold_adverse_events = []
+                for entity in gold["entities"]:
+                    entity_text = text[entity["start"]:entity["end"]]
+                    if entity["label"] == "DRUG":
+                        gold_drugs.append(entity_text)
+                    elif entity["label"] == "ADE":
+                        gold_adverse_events.append(entity_text)
+                gold_converted = {
+                    "text": text,
+                    "drugs": gold_drugs,
+                    "adverse_events": gold_adverse_events
+                }
+            metrics = calculate_entity_metrics(pred_record_converted, gold_converted)
+            # Debug
+            if idx < 5:
+                logger.info(f"\nLLM {approach} Example {idx+1}:")
+                logger.info(f"Text: {text[:100]}...")
+                logger.info(f"Predicted drugs: {drugs}")
+                logger.info(f"Predicted ADEs: {adverse_events}")
+                if "drugs" in gold_converted:
+                    logger.info(f"Gold drugs: {gold_converted['drugs']}")
+                    logger.info(f"Gold ADEs: {gold_converted['adverse_events']}")
+                else:
+                    logger.info(f"Gold entities: {gold['entities']}")
+                logger.info(f"Metrics: P={metrics['overall']['precision']:.4f}, R={metrics['overall']['recall']:.4f}, F1={metrics['overall']['f1']:.4f}")
+                logger.info(f"True positives: {metrics['overall']['true_positives']}, False positives: {metrics['overall']['false_positives']}, False negatives: {metrics['overall']['false_negatives']}")
+            results[approach].append(metrics)
+    all_results["Direct LLM"] = results["direct"]
+    all_results["DSPy"] = results["dspy"]
+
     # Visualize and save
-    results_dir = os.path.join("analysis", "comparison_results", 
-                            datetime.now().strftime("%Y%m%d_%H%M%S") + "_bio_clinicalbert")
     visualize_results(all_results, results_dir)
-    
     logger.info(f"Evaluation complete. Results saved to: {results_dir}")
 
 if __name__ == "__main__":

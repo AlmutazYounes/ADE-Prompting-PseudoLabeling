@@ -31,7 +31,7 @@ for directory in [DATA_DIR, DIRECT_DATA_DIR, DSPY_DATA_DIR, GOLD_DATA_DIR]:
 # ==================== DATA SETTINGS ====================
 INPUT_FILE = os.path.join(DATA_DIR, 'train.txt')
 MAX_NOTES = 5000000
-MAX_TEST_NOTES = 500
+MAX_TEST_NOTES = 100
 
 # Gold data processing steps
 STEP_1_GOLD_STANDARD = os.path.join(GOLD_DATA_DIR, "gold_extracted_data.jsonl")
