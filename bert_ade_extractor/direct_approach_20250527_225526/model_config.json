@@ -1,0 +1,16 @@
+{
+  "id2label": {
+    "0": "B-ADE",
+    "1": "B-DRUG",
+    "2": "I-ADE",
+    "3": "I-DRUG",
+    "4": "O"
+  },
+  "label2id": {
+    "B-ADE": 0,
+    "B-DRUG": 1,
+    "I-ADE": 2,
+    "I-DRUG": 3,
+    "O": 4
+  }
+}

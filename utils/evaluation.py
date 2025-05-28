@@ -38,7 +38,7 @@ def analyze_and_visualize_results(pipeline_results, output_dir=None):
     plt.figure(figsize=(12, 6))
     
     # Create bar positions
-    models = ['Base ModernBERT', 'Fine-tuned ModernBERT']
+    models = ['Base BERT', 'Fine-tuned BERT']
     x = np.arange(len(models))
     width = 0.25
     
@@ -49,7 +49,7 @@ def analyze_and_visualize_results(pipeline_results, output_dir=None):
     
     # Customize plot
     plt.ylabel('Score')
-    plt.title('Performance Comparison: Base vs. Fine-tuned ModernBERT')
+    plt.title('Performance Comparison: Base vs. Fine-tuned BERT')
     plt.xticks(x, models)
     plt.legend()
     plt.ylim(0, 1.0)

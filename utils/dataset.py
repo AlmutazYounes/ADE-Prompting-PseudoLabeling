@@ -8,7 +8,7 @@ Dataset classes and data preparation for ADE extraction
 import re
 import torch
 from torch.utils.data import Dataset
-from utils.config import NER_LABELS, ID_TO_LABEL, MAX_TOKENIZER_LENGTH, BATCH_SIZE, MAX_WORKERS
+from utils.config import NER_LABELS, ID_TO_LABEL, BERT_MAX_LENGTH, BATCH_SIZE, MAX_WORKERS
 import numpy as np
 import logging
 import time
@@ -112,7 +112,7 @@ class ADEDatasetProcessor:
         return ner_data
         
     def prepare_bio_data(self, ner_data=None, tokenizer=None):
-        """Prepare BIO data for ModernBERT fine-tuning."""
+        """Prepare BIO data for BERT fine-tuning."""
         from utils.utils import create_bio_dataset
         
         if ner_data is None:
@@ -127,7 +127,7 @@ class ADEDatasetProcessor:
             logger.error("No tokenizer available to prepare BIO data.")
             return [], [], [], [], []
             
-        bio_records = create_bio_dataset(ner_data, tokenizer_to_use, max_len=MAX_TOKENIZER_LENGTH)
+        bio_records = create_bio_dataset(ner_data, tokenizer_to_use, max_len=BERT_MAX_LENGTH)
         all_texts = [record.get('text', '') for record in ner_data]
         all_input_ids = [record.get('input_ids', []) for record in bio_records]
         all_attention_masks = [record.get('attention_mask', []) for record in bio_records]
@@ -177,7 +177,7 @@ class ADEDatasetProcessor:
 class ADEDataset(Dataset):
     """PyTorch Dataset for ADE extraction fine-tuning."""
     
-    def __init__(self, texts, tags, tokenizer, max_len=128, input_ids=None, attention_masks=None):
+    def __init__(self, texts, tags, tokenizer, max_len=BERT_MAX_LENGTH, input_ids=None, attention_masks=None):
         """Initialize the dataset."""
         self.texts = texts
         self.tags = tags

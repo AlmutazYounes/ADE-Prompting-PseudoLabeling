@@ -84,3 +84,6 @@ temp/
 !analysis/pipeline_outputs/direct/.gitkeep
 !analysis/pipeline_outputs/dspy/.gitkeep
 !modernbert_ade_extractor_final/.gitkeep
+batch_processing
+batch_processing/
+batch_processing/*
