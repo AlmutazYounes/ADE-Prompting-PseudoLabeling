@@ -46,8 +46,6 @@ GOLD_NER_DATA_PATH = STEP_2_GOLD_NER_DATA
 LLM_MODEL_NAME = "gpt-4o-mini"
 
 # --- BERT ---
-BERT_MODEL_NAME = "MutazYoune/ClinicalBERT-AE-NER"  # emilyalsentzer/Bio_ClinicalBERT
-BERT_MAX_LENGTH = 512
 BERT_OUTPUT_DIR = os.path.join(BASE_DIR, "bert_ade_extractor")
 
 # --- NER ---
@@ -65,6 +63,8 @@ BATCH_SIZE = 4
 MAX_WORKERS = 5
 
 # --- Training hyperparameters ---
+BERT_MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"  # MutazYoune/ClinicalBERT-AE-NER
+BERT_MAX_LENGTH = 512
 DEFAULT_EPOCHS = 10
 DEFAULT_LEARNING_RATE = 5e-5
 

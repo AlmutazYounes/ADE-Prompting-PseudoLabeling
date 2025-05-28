@@ -375,6 +375,10 @@ def train_bert_model(mode="direct"):
         gold_test_dataset = prepare_gold_test_data(tokenizer, label2id)
         gold_results = trainer.evaluate(gold_test_dataset)
         
+        # Save the fine-tuned model and tokenizer
+        trainer.save_model(output_dir)
+        tokenizer.save_pretrained(output_dir)
+        
         # Save only the model weights, not the full trainer state
         try:
             logger.info("Saving minimal model representation...")
@@ -451,6 +455,7 @@ def main():
                         help="Mode for data extraction (direct or dspy)")
     args = parser.parse_args()
     model, tokenizer, metrics, output_dir = train_bert_model(mode=args.mode)
+    
     logger.info(f"BERT model training complete.")
     logger.info(f"Fine-tuned model metrics on gold standard - F1: {metrics['gold_results'].get('overall_f1', 0):.4f}, "
             f"Precision: {metrics['gold_results'].get('overall_precision', 0):.4f}, "
