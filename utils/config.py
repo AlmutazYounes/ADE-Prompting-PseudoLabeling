@@ -63,9 +63,9 @@ BATCH_SIZE = 4
 MAX_WORKERS = 5
 
 # --- Training hyperparameters ---
-BERT_MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"  # MutazYoune/ClinicalBERT-AE-NER
-BERT_MAX_LENGTH = 512
-DEFAULT_EPOCHS = 10
+BERT_MODEL_NAME = "MutazYoune/ClinicalBERT-AE-NER"  # MutazYoune/ClinicalBERT-AE-NER
+BERT_MAX_LENGTH = 128
+DEFAULT_EPOCHS = 5
 DEFAULT_LEARNING_RATE = 5e-5
 
 # --- HuggingFace Trainer Settings ---
