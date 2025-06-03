@@ -1,0 +1,27 @@
+================================================================================
+MODEL EVALUATION SUMMARY
+================================================================================
+
+PERFORMANCE COMPARISON:
+--------------------------------------------------------------------------------
+Approach                  Precision    Recall       F1 Score    
+--------------------------------------------------------------------------------
+Direct LLM                0.8665       0.8061       0.8219      
+Validator LLM             0.8643       0.8068       0.8216      
+direct_Bio_ClinicalBERT_old 0.3616       0.4249       0.3907      
+direct_ClinicalBERT-AE-NER 0.7368       0.7589       0.7477      
+direct_ClinicalBERT-AE-NER_enhanced_old 0.6759       0.6147       0.6439      
+direct_ClinicalBERT-AE-NER_old 0.6490       0.6147       0.6314      
+direct_ModernBERT-base-biomedical-ner 0.7925       0.7693       0.7807      
+direct_ModernBERT-base-biomedical-ner_old 0.7239       0.6007       0.6566      
+
+
+BEST PERFORMING MODEL:
+--------------------------------------------------------------------------------
+Approach: Direct LLM
+F1 Score: 0.8219
+Precision: 0.8665
+Recall: 0.8061
+
+
+================================================================================

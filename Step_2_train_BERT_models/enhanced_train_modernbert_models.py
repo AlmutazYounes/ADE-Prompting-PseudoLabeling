@@ -2,14 +2,18 @@
 # -*- coding: utf-8 -*-
 
 """
-Enhanced script for training BERT models for ADE extraction.
-This version includes several improvements over the original script:
+Enhanced specialized script for training ModernBERT models for ADE extraction.
+This version handles the specific requirements of ModernBERT architecture
+which doesn't accept token_type_ids in its forward method.
+
+Features:
 1. Linear Warmup Learning Rate Scheduler
 2. CRF layer on top of BERT for better entity boundaries
 3. Improved token alignment for NER
 4. Early stopping with model checkpointing
 5. Optimized hyperparameters
 6. Gradient clipping
+7. Specialized handling for ModernBERT architecture limitations
 """
 
 import os
@@ -64,19 +68,19 @@ load_dotenv()
 MODELS_OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 os.makedirs(MODELS_OUTPUT_DIR, exist_ok=True)
 
-# Get default parameters for enhanced mode
-enhanced_defaults = DEFAULT_PARAMETERS.get("enhanced", {})
+# Get default parameters for modernbert mode
+modernbert_defaults = DEFAULT_PARAMETERS.get("modernbert", {})
 
-# Enhanced training parameters
-DEFAULT_BATCH_SIZE = enhanced_defaults.get("batch_size", 16)
-DEFAULT_EPOCHS = enhanced_defaults.get("epochs", 10)
-DEFAULT_LEARNING_RATE = enhanced_defaults.get("learning_rate", 3e-5)
-DEFAULT_WARMUP_RATIO = enhanced_defaults.get("warmup_ratio", 0.1)
-DEFAULT_WEIGHT_DECAY = enhanced_defaults.get("weight_decay", 0.01)
-DEFAULT_GRADIENT_CLIP = enhanced_defaults.get("gradient_clip", 1.0)
+# ModernBERT training parameters
+DEFAULT_BATCH_SIZE = modernbert_defaults.get("batch_size", 16)
+DEFAULT_EPOCHS = modernbert_defaults.get("epochs", 10)
+DEFAULT_LEARNING_RATE = modernbert_defaults.get("learning_rate", 3e-5)
+DEFAULT_WARMUP_RATIO = modernbert_defaults.get("warmup_ratio", 0.1)
+DEFAULT_WEIGHT_DECAY = modernbert_defaults.get("weight_decay", 0.01)
+DEFAULT_GRADIENT_CLIP = modernbert_defaults.get("gradient_clip", 1.0)
 
 # Data split parameters
-VAL_SIZE = enhanced_defaults.get("val_size", 0.1)
+VAL_SIZE = modernbert_defaults.get("val_size", 0.1)
 
 # Training arguments for HuggingFace Trainer
 TRAINING_ARGS = {
@@ -322,20 +326,20 @@ def create_compute_metrics_fn(id2label):
     
     return compute_metrics
 
-# BERT-CRF model for improved entity boundary detection
-class BertCRFForNER(nn.Module):
+# ModernBERT-CRF model - specifically modified for ModernBERT architecture
+class ModernBertCRFForNER(nn.Module):
     def __init__(self, bert_model, num_labels):
-        super(BertCRFForNER, self).__init__()
+        super(ModernBertCRFForNER, self).__init__()
         self.bert = bert_model
         self.dropout = nn.Dropout(0.1)
         self.classifier = nn.Linear(self.bert.config.hidden_size, num_labels)
         self.crf = CRF(num_labels, batch_first=True)
         
-    def forward(self, input_ids, attention_mask=None, token_type_ids=None, labels=None):
+    def forward(self, input_ids, attention_mask=None, labels=None):
+        # Note: Removed token_type_ids parameter which ModernBERT doesn't support
         outputs = self.bert(
             input_ids=input_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids
+            attention_mask=attention_mask
         )
         
         sequence_output = outputs[0]
@@ -353,30 +357,28 @@ class BertCRFForNER(nn.Module):
             log_likelihood = self.crf(emissions, labels_fixed, mask=mask)
             loss = -log_likelihood
             
-            # Get CRF decoded sequence (not returned)
-            # best_path = self.crf.decode(emissions, mask=mask)
-            
             return {
                 'loss': loss,
                 'logits': emissions
             }
         else:
-            # Get CRF decoded sequence (not returned)
-            # mask = attention_mask.bool()
-            # best_path = self.crf.decode(emissions, mask=mask)
             return {
                 'logits': emissions
             }
 
-class EnhancedTrainer(Trainer):
-    """Enhanced trainer class with CRF support and improved logging"""
+class ModernBertTrainer(Trainer):
+    """Custom trainer class with CRF support for ModernBERT"""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._logged_eval_results = False
     
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         """Override compute_loss to handle CRF models and accept extra kwargs"""
-        if isinstance(model, BertCRFForNER):
+        # Remove token_type_ids from inputs if it exists - ModernBERT doesn't support it
+        if "token_type_ids" in inputs:
+            del inputs["token_type_ids"]
+            
+        if isinstance(model, ModernBertCRFForNER):
             outputs = model(
                 input_ids=inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
@@ -385,6 +387,7 @@ class EnhancedTrainer(Trainer):
             loss = outputs['loss']
             return (loss, outputs) if return_outputs else loss
         else:
+            # For standard models, use the parent class method
             return super().compute_loss(model, inputs, return_outputs, **kwargs)
     
     def evaluate(self, eval_dataset=None, ignore_keys=None, metric_key_prefix="eval"):
@@ -418,7 +421,7 @@ class EnhancedTrainer(Trainer):
 
 def print_banner(model_id, data_source):
     term_width = shutil.get_terminal_size((80, 20)).columns
-    banner_text = f" ENHANCED TRAINING: {model_id} ON {data_source.upper()} DATA "
+    banner_text = f" ENHANCED TRAINING ModernBERT: {model_id} ON {data_source.upper()} DATA "
     banner = f"\033[1;44m{banner_text.center(term_width)}\033[0m"
     logger.info("\n" + banner + "\n")
 
@@ -430,14 +433,14 @@ def get_best_device():
     else:
         return torch.device("cpu")
 
-def train_model(
+def train_modernbert_model(
     data_path: str,
     model_name: str,
     output_dir: str,
     data_source: str,
     config: Dict = None
 ) -> Dict[str, Any]:
-    """Train a BERT model for NER on the specified data with enhanced techniques"""
+    """Train a ModernBERT model for NER with specialized handling"""
     
     # Get settings from config or defaults
     batch_size = config.get("batch_size", DEFAULT_BATCH_SIZE)
@@ -457,29 +460,28 @@ def train_model(
     model_id = model_name.split('/')[-1]
     
     # Add '_enhanced' to model name for output directory and config
-    enhanced_model_id = f"{model_id}_enhanced"
     model_output_dir = os.path.join(output_dir, f"{data_source}_{model_id}_enhanced")
     os.makedirs(model_output_dir, exist_ok=True)
     
-    print_banner(enhanced_model_id, data_source)
+    print_banner(model_id, data_source)
     
     device = get_best_device()
     logger.info(f"Using device: {device}")
     logger.info(f"\n{'='*70}")
-    logger.info(f"Enhanced Training: {model_id} on {data_source} data")
+    logger.info(f"Enhanced Training ModernBERT: {model_id} on {data_source} data")
     logger.info(f"Output directory: {model_output_dir}")
     logger.info(f"{'='*70}")
     
     # Set fp16 only if CUDA is available
     fp16_enabled = device.type == "cuda"
     
-    # Load tokenizer and model
+    # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     
     # Load and process data
     data = load_data(data_path)
     
-    # Use only the original data for training (no augmentation)
+    # Process the data
     processed_data = data
     needs_processing = "tokens" not in processed_data[0] or "tags" not in processed_data[0]
     
@@ -493,15 +495,16 @@ def train_model(
     
     datasets = create_datasets(processed_data, val_size=val_size)
     
-    # Load base BERT model
+    # Load base ModernBERT model
     use_crf = config.get("use_crf", True)
     if use_crf:
         # Use AutoModel (no classifier head) for CRF
         base_model = AutoModel.from_pretrained(model_name)
-        logger.info("Using BERT-CRF model for improved entity boundary detection")
-        model = BertCRFForNER(base_model, num_labels)
+        logger.info("Using ModernBERT-CRF model for improved entity boundary detection")
+        model = ModernBertCRFForNER(base_model, num_labels)
     else:
-        # Use standard token classification head
+        # Special handling for ModernBERT without CRF
+        logger.info("Using standard ModernBERT model")
         base_model = AutoModelForTokenClassification.from_pretrained(
             model_name, 
             num_labels=num_labels,
@@ -509,7 +512,6 @@ def train_model(
             label2id=label2id,
             ignore_mismatched_sizes=True
         )
-        logger.info("Using standard BERT model")
         model = base_model
     
     # Tokenize and align labels
@@ -558,19 +560,26 @@ def train_model(
         logging_first_step=TRAINING_ARGS["logging_first_step"]
     )
     
-    # Create data collator
-    data_collator = DataCollatorForTokenClassification(tokenizer)
+    # Create data collator - custom collator that removes token_type_ids
+    class ModernBERTDataCollator(DataCollatorForTokenClassification):
+        def __call__(self, features):
+            batch = super().__call__(features)
+            if "token_type_ids" in batch:
+                del batch["token_type_ids"]
+            return batch
+    
+    data_collator = ModernBERTDataCollator(tokenizer)
     
     # Create compute metrics function
     compute_metrics = create_compute_metrics_fn(id2label)
     
-    # Initialize enhanced trainer with early stopping
+    # Initialize trainer with early stopping
     early_stopping_callback = EarlyStoppingCallback(
         early_stopping_patience=3,
         early_stopping_threshold=0.001
     )
     
-    trainer = EnhancedTrainer(
+    trainer = ModernBertTrainer(
         model=model,
         args=training_args,
         train_dataset=tokenized_datasets["train"],
@@ -582,7 +591,7 @@ def train_model(
     )
     
     # Train the model
-    logger.info("\nStarting enhanced training...\n")
+    logger.info("\nStarting Enhanced ModernBERT training...\n")
     train_result = trainer.train()
     
     # Final evaluation
@@ -593,7 +602,7 @@ def train_model(
     logger.info(f"Saving model to {model_output_dir}")
     trainer.save_model(model_output_dir)
 
-    # --- NEW: Save HuggingFace-compatible config.json ---
+    # Save HuggingFace-compatible config.json
     # If using CRF, create a minimal config.json for HuggingFace compatibility
     config_json = {
         "architectures": ["BertForTokenClassification"],
@@ -616,11 +625,10 @@ def train_model(
     import json as _json
     with open(os.path.join(model_output_dir, "config.json"), "w") as f:
         _json.dump(config_json, f, indent=2)
-    # --- END NEW ---
     
     # Save training configuration
     config = {
-        "model_name": f"{model_name}_enhanced",
+        "model_name": f"{model_name}",
         "data_path": data_path,
         "data_source": data_source,
         "batch_size": batch_size,
@@ -649,8 +657,8 @@ def train_model(
         "final_metrics": final_metrics
     }
 
-def run_training_pipeline(config: Dict = None):
-    """Run the enhanced training pipeline for all models and data sources"""
+def run_enhanced_modernbert_pipeline(config: Dict = None):
+    """Run the enhanced training pipeline for ModernBERT models"""
     # Use default config if none provided
     if config is None:
         config = {}
@@ -661,11 +669,11 @@ def run_training_pipeline(config: Dict = None):
     
     # Get data sources and models to train
     data_sources = config.get("data_sources", DATA_SOURCES)
-    models_to_train = config.get("models_to_train", list(AVAILABLE_MODELS.keys()))
+    models_to_train = config.get("models_to_train", [k for k, v in AVAILABLE_MODELS.items() if k.startswith("ModernBERT")])
     overwrite_existing = config.get("overwrite_existing", False)
     
-    # Enhanced training config params
-    enhanced_config = {
+    # Training config params
+    training_config = {
         "batch_size": config.get("batch_size", DEFAULT_BATCH_SIZE),
         "epochs": config.get("epochs", DEFAULT_EPOCHS),
         "learning_rate": config.get("learning_rate", DEFAULT_LEARNING_RATE),
@@ -679,13 +687,13 @@ def run_training_pipeline(config: Dict = None):
     }
     
     logger.info("\n" + "="*70)
-    logger.info("Starting Enhanced BERT Model Training Pipeline")
+    logger.info("Starting Enhanced ModernBERT Training Pipeline")
     logger.info(f"Output directory: {run_dir}")
     logger.info(f"Models: {', '.join(models_to_train)}")
     logger.info(f"Data sources: {', '.join(data_sources)}")
     logger.info("-"*70)
-    logger.info("Enhanced training parameters:")
-    for key, value in enhanced_config.items():
+    logger.info("Training parameters:")
+    for key, value in training_config.items():
         logger.info(f"  {key}: {value}")
     logger.info("="*70 + "\n")
     
@@ -707,12 +715,12 @@ def run_training_pipeline(config: Dict = None):
                 continue
             
             try:
-                training_results = train_model(
+                training_results = train_modernbert_model(
                     data_path=data_path,
                     model_name=full_model_name,
                     output_dir=run_dir,
                     data_source=data_source,
-                    config=enhanced_config
+                    config=training_config
                 )
                 
                 results[data_source][model_name] = {
@@ -729,20 +737,20 @@ def run_training_pipeline(config: Dict = None):
                 results[data_source][model_name] = {"status": "error", "error": str(e)}
     
     # Save summary of all results
-    summary_path = os.path.join(run_dir, "training_summary_enhanced.json")
+    summary_path = os.path.join(run_dir, "modernbert_training_summary.json")
     with open(summary_path, "w") as f:
         json.dump(results, f, indent=2)
     
     logger.info("\n" + "="*70)
-    logger.info("Enhanced training pipeline completed")
+    logger.info("Enhanced ModernBERT training pipeline completed")
     logger.info(f"Summary saved to {summary_path}")
     logger.info("="*70 + "\n")
     
     return results
 
-def train_models(config: Dict):
+def train_modernbert_models(config: Dict):
     """Entry point for run_step2.py"""
-    return run_training_pipeline(config)
+    return run_enhanced_modernbert_pipeline(config)
 
 if __name__ == "__main__":
-    run_training_pipeline() 
+    run_enhanced_modernbert_pipeline() 

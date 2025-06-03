@@ -28,6 +28,14 @@ from transformers import (
     DataCollatorForTokenClassification
 )
 
+# Import centralized configuration
+from Step_2_train_BERT_models.bert_config import (
+    AVAILABLE_MODELS,
+    DATA_SOURCES,
+    DEFAULT_MAX_LENGTH,
+    get_model_path
+)
+
 # Load environment variables
 load_dotenv()
 
@@ -37,26 +45,10 @@ load_dotenv()
 MODELS_OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 os.makedirs(MODELS_OUTPUT_DIR, exist_ok=True)
 
-# Available BERT models to train
-AVAILABLE_MODELS = {
-    "Bio_ClinicalBERT": "emilyalsentzer/Bio_ClinicalBERT",
-    "MutazYoune_ClinicalBERT": "MutazYoune/ClinicalBERT-AE-NER",
-    "Kushtrim_ModernBERT": "Kushtrim/ModernBERT-base-biomedical-ner",
-}
-
-# Data sources to use for training (options: "direct", "dspy")
-DATA_SOURCES = ["direct", "dspy"]
-
-# Models to train (use keys from AVAILABLE_MODELS)
-MODELS_TO_TRAIN = AVAILABLE_MODELS.keys()
-
-# Training parameters
+# Training parameters - now sourced from bert_config.py
 DEFAULT_BATCH_SIZE = 16
 DEFAULT_EPOCHS = 3
 DEFAULT_LEARNING_RATE = 5e-5
-DEFAULT_MAX_LENGTH = 128
-
-# Data split parameters
 VAL_SIZE = 0.1
 
 # Training arguments for HuggingFace Trainer
@@ -462,13 +454,6 @@ def train_model(
         "train_metrics": train_result.metrics
     }
 
-def get_model_path(model_name: str) -> str:
-    """Get the full model path for a given model name"""
-    if model_name in AVAILABLE_MODELS:
-        return AVAILABLE_MODELS[model_name]
-    else:
-        return model_name
-
 def run_training_pipeline(config: Dict = None):
     """Run the training pipeline for all models and data sources"""
     # Use default config if none provided
@@ -481,7 +466,7 @@ def run_training_pipeline(config: Dict = None):
     
     # Get data sources and models to train
     data_sources = config.get("data_sources", DATA_SOURCES)
-    models_to_train = config.get("models_to_train", MODELS_TO_TRAIN)
+    models_to_train = config.get("models_to_train", list(AVAILABLE_MODELS.keys()))
     overwrite_existing = config.get("overwrite_existing", False)
     
     logger.info("\n" + "="*70)
@@ -494,7 +479,8 @@ def run_training_pipeline(config: Dict = None):
     results = {}
     
     for data_source in data_sources:
-        data_path = os.path.join("Step_1_data_generation", "data", data_source, "ner_data.jsonl")
+        data_path = os.path.join("Step_1_data_generation", "data", data_source, 
+                              config.get("dataset_filename", "ner_data.jsonl"))
         results[data_source] = {}
         
         for model_name in models_to_train:
@@ -543,10 +529,8 @@ def run_training_pipeline(config: Dict = None):
 def train_models(config: Dict):
     """Entry point for run_step2.py"""
     # Import numpy here to avoid issues
-    import numpy as np
     return run_training_pipeline(config)
 
 if __name__ == "__main__":
     # Import numpy here to avoid issues
-    import numpy as np
     run_training_pipeline()
