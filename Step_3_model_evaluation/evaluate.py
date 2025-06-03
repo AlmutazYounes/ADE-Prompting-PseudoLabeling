@@ -27,28 +27,42 @@ from tabulate import tabulate
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 import evaluate
 
-# Import local config
-from Step_3_model_evaluation.config import (
-    STEP_2_GOLD_NER_DATA, 
-    MAX_TEST_NOTES, 
-    TRAINED_MODELS_DIR, 
-    LLM_CACHE_DIR,
-    COMPARISON_RESULTS_DIR, 
-    BERT_MAX_LENGTH, 
-    DEFAULT_BERT_MODEL_NAME,
-    NER_LABELS,
-    ID_TO_LABEL,
-    VISUALIZATION,
-    USE_CACHE_DEFAULT,
-    OVERWRITE_CACHE_DEFAULT
-)
-
 # Suppress unnecessary warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import warnings
 warnings.filterwarnings("ignore")
 from transformers.utils import logging as hf_logging
 hf_logging.set_verbosity_error()
+
+# Move all relevant constants from config.py here:
+STEP_2_GOLD_NER_DATA = os.path.join("Step_1_data_generation", "data", "gold", "gold_ner_data.jsonl")
+DIRECT_NER_DATA = os.path.join("Step_1_data_generation", "data", "direct", "ner_data.jsonl")
+DSPY_NER_DATA = os.path.join("Step_1_data_generation", "data", "dspy", "ner_data.jsonl")
+TRAINED_MODELS_DIR = os.path.join("Step_2_train_BERT_models", "trained_models")
+LLM_CACHE_DIR = os.path.join("analysis", "llm_cache")
+COMPARISON_RESULTS_DIR = os.path.join("analysis", "comparison_results")
+BERT_MAX_LENGTH = 256
+DEFAULT_BERT_MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"
+NER_LABELS = ["ADE", "Drug", "Dosage", "Route", "Frequency", "Duration", "Reason", "Form"]
+ID_TO_LABEL = {
+    0: "O", 
+    1: "B-ADE", 2: "I-ADE",
+    3: "B-Drug", 4: "I-Drug",
+    5: "B-Dosage", 6: "I-Dosage",
+    7: "B-Route", 8: "I-Route",
+    9: "B-Frequency", 10: "I-Frequency",
+    11: "B-Duration", 12: "I-Duration",
+    13: "B-Reason", 14: "I-Reason",
+    15: "B-Form", 16: "I-Form"
+}
+VISUALIZATION = {
+    "figsize_default": (12, 8),
+    "colormap": "YlGnBu",
+    "dpi": 100
+}
+USE_CACHE_DEFAULT = True
+OVERWRITE_CACHE_DEFAULT = False
+AVAILABLE_DATA_SOURCES = ["direct", "dspy", "pipeline", "validator", "structured"]
 
 #############################
 # Utility Functions
@@ -327,7 +341,12 @@ def evaluate_llm_approaches(test_notes, gold_data, use_cache=USE_CACHE_DEFAULT, 
             openai.api_key = os.getenv('OPENAI_API_KEY')
             
             # Import the direct LLM functions
-            from direct_llm_generator import create_entities, process_batch, PROMPT_TEMPLATE, LLM_MODEL_NAME, LLM_TEMPERATURE, LLM_MAX_TOKENS, BATCH_SIZE
+            from direct_llm_generator import create_entities, process_batch, PROMPT_TEMPLATE
+            # Set LLM parameters (mirroring direct_llm_generator.py defaults)
+            LLM_MODEL_NAME = "gpt-4.1-nano"
+            LLM_TEMPERATURE = 0.1
+            LLM_MAX_TOKENS = 2000
+            BATCH_SIZE = 10
             
             # Import DSPy generator
             print("🔍 Setting up DSPy generator...")
@@ -695,11 +714,13 @@ def run_evaluation(config):
     
     # Load gold standard data
     gold_data_path = config.get("gold_data_path", STEP_2_GOLD_NER_DATA)
-    max_notes = config.get("max_notes", MAX_TEST_NOTES)
+    # Only use max_notes/max_test_notes from config, not from config.py defaults
+    max_notes = config.get("max_notes")
+    if max_notes is None:
+        max_notes = config.get("max_test_notes")
     print(f"\n{'='*70}")
     print(f"📂 Loading gold standard data from {gold_data_path}")
     gold_data = load_from_jsonl(gold_data_path)
-    
     if max_notes is not None:
         gold_data = gold_data[:max_notes]
     

@@ -40,6 +40,7 @@ os.makedirs(MODELS_OUTPUT_DIR, exist_ok=True)
 AVAILABLE_MODELS = {
     "Bio_ClinicalBERT": "emilyalsentzer/Bio_ClinicalBERT",
     "MutazYoune_ClinicalBERT": "MutazYoune/ClinicalBERT-AE-NER",
+    "Kushtrim_ModernBERT": "Kushtrim/ModernBERT-base-biomedical-ner",
 }
 
 # Data sources to use for training (options: "direct", "dspy")

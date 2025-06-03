@@ -593,6 +593,31 @@ def train_model(
     # Save model, tokenizer, and configuration
     logger.info(f"Saving model to {model_output_dir}")
     trainer.save_model(model_output_dir)
+
+    # --- NEW: Save HuggingFace-compatible config.json ---
+    # If using CRF, create a minimal config.json for HuggingFace compatibility
+    config_json = {
+        "architectures": ["BertForTokenClassification"],
+        "model_type": "bert",
+        "num_labels": num_labels,
+        "id2label": id2label,
+        "label2id": label2id,
+        "hidden_size": getattr(model.bert.config, "hidden_size", 768),
+        "vocab_size": getattr(model.bert.config, "vocab_size", 28996),
+        "max_position_embeddings": getattr(model.bert.config, "max_position_embeddings", 512),
+        "initializer_range": getattr(model.bert.config, "initializer_range", 0.02),
+        "layer_norm_eps": getattr(model.bert.config, "layer_norm_eps", 1e-12),
+        "pad_token_id": getattr(model.bert.config, "pad_token_id", 0),
+        "attention_probs_dropout_prob": getattr(model.bert.config, "attention_probs_dropout_prob", 0.1),
+        "hidden_dropout_prob": getattr(model.bert.config, "hidden_dropout_prob", 0.1),
+        "type_vocab_size": getattr(model.bert.config, "type_vocab_size", 2),
+        "torch_dtype": str(getattr(model.bert.config, "torch_dtype", "float32")),
+        "problem_type": "single_label_classification"
+    }
+    import json as _json
+    with open(os.path.join(model_output_dir, "config.json"), "w") as f:
+        _json.dump(config_json, f, indent=2)
+    # --- END NEW ---
     
     # Save training configuration
     config = {

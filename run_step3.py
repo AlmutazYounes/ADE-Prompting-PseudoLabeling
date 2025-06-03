@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 def main():
     """Main function to configure and run evaluation."""
     # Simple config dict for all options
-    from Step_3_model_evaluation.config import AVAILABLE_DATA_SOURCES
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     config = {
@@ -39,14 +38,15 @@ def main():
         "use_cache": True,           # Use cached results for LLM/DSPy evaluation
         "overwrite_cache": False,    # Force rerun of LLM and DSPy extraction (costs money)
         "skip_llm": False,           # Skip evaluation of LLM-based approaches
-        "max_test_notes": 10,        # Number of test notes to evaluate
+        "max_test_notes": 1000,        # Number of test notes to evaluate
         "bert_max_length": 256,      # Max sequence length for BERT models
         
         # Additional analysis
         "detailed_analysis": False,   # Perform detailed error analysis (slower)
 
         # Data sources to evaluate (user can select from AVAILABLE_DATA_SOURCES)
-        "data_sources": ["direct", "dspy", "pipeline", "validator", "structured"] 
+        # Available data sources: direct, dspy, pipeline, validator, structured
+        "data_sources": ["direct"] 
     }
 
     # Import the consolidated evaluation module

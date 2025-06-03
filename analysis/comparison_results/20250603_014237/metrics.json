@@ -1,0 +1,22 @@
+{
+  "direct_Bio_ClinicalBERT": {
+    "precision": 0.3616223585548738,
+    "recall": 0.42490989187024447,
+    "f1": 0.3907199410789909
+  },
+  "direct_ClinicalBERT-AE-NER": {
+    "precision": 0.6490486257928119,
+    "recall": 0.6147376852222666,
+    "f1": 0.6314273961332785
+  },
+  "direct_ClinicalBERT-AE-NER_enhanced": {
+    "precision": 0.6759136944077498,
+    "recall": 0.6147376852222666,
+    "f1": 0.6438758389261744
+  },
+  "Direct LLM": {
+    "precision": 0.8497611111111111,
+    "recall": 0.7802702380952381,
+    "f1": 0.7950660313542667
+  }
+}

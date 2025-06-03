@@ -6,20 +6,18 @@ PERFORMANCE COMPARISON:
 --------------------------------------------------------------------------------
 Approach                  Precision    Recall       F1 Score    
 --------------------------------------------------------------------------------
-DSPy                      0.7917       0.7750       0.7717      
-Direct LLM                0.7733       0.9000       0.8244      
-direct_Bio_ClinicalBERT   0.3590       0.5600       0.4375      
-direct_ClinicalBERT-AE-NER 0.6452       0.8000       0.7143      
-dspy_Bio_ClinicalBERT     0.2143       0.3600       0.2687      
-dspy_ClinicalBERT-AE-NER  0.5806       0.7200       0.6429      
+Direct LLM                0.8498       0.7803       0.7951      
+direct_Bio_ClinicalBERT   0.3616       0.4249       0.3907      
+direct_ClinicalBERT-AE-NER 0.6490       0.6147       0.6314      
+direct_ClinicalBERT-AE-NER_enhanced 0.6759       0.6147       0.6439      
 
 
 BEST PERFORMING MODEL:
 --------------------------------------------------------------------------------
 Approach: Direct LLM
-F1 Score: 0.8244
-Precision: 0.7733
-Recall: 0.9000
+F1 Score: 0.7951
+Precision: 0.8498
+Recall: 0.7803
 
 
 ================================================================================

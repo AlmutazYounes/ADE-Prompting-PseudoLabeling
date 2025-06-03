@@ -30,7 +30,8 @@ def main():
         "data_sources": ["direct"],  # Which data sources to use for training
         
         # Training options
-        "models_to_train": ["MutazYoune_ClinicalBERT"],  # Model keys from AVAILABLE_MODELS dict
+        # Available models: Bio_ClinicalBERT, MutazYoune_ClinicalBERT, Kushtrim_ModernBERT
+        "models_to_train": ["Kushtrim_ModernBERT"],  # AVAILABLE_MODELS dict found here Step_2_train_BERT_models/train_bert_models.py
         "overwrite_existing": True,  # Overwrite existing trained models
         
         # Training parameters
@@ -42,7 +43,7 @@ def main():
         "seed": 42,         # Random seed for reproducibility
         
         # Enhanced training flag
-        "use_enhanced_training": True,  # Set to True to use the enhanced training approach
+        "use_enhanced_training": False,  # Set to True to use the enhanced training approach
     }
 
     # Import the BERT model training module
