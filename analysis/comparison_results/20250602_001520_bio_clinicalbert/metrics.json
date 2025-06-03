@@ -1,0 +1,32 @@
+{
+  "dspy_Bio_ClinicalBERT": {
+    "precision": 0.21428571428571427,
+    "recall": 0.36,
+    "f1": 0.26865671641791045
+  },
+  "direct_Bio_ClinicalBERT": {
+    "precision": 0.358974358974359,
+    "recall": 0.5600000000000002,
+    "f1": 0.4375
+  },
+  "dspy_ClinicalBERT-AE-NER": {
+    "precision": 0.5806451612903227,
+    "recall": 0.72,
+    "f1": 0.6428571428571427
+  },
+  "direct_ClinicalBERT-AE-NER": {
+    "precision": 0.6451612903225807,
+    "recall": 0.8,
+    "f1": 0.7142857142857142
+  },
+  "Direct LLM": {
+    "precision": 0.7733333333333333,
+    "recall": 0.9,
+    "f1": 0.8244444444444445
+  },
+  "DSPy": {
+    "precision": 0.7916666666666666,
+    "recall": 0.775,
+    "f1": 0.7716666666666667
+  }
+}

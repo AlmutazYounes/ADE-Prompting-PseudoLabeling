@@ -1,0 +1,137 @@
+[
+  {
+    "approach1": "dspy_Bio_ClinicalBERT",
+    "approach2": "Direct LLM",
+    "f1_diff": -0.5557877280265341,
+    "precision_diff": -0.559047619047619,
+    "recall_diff": -0.54,
+    "winner": "Direct LLM",
+    "f1_diff_abs": 0.5557877280265341
+  },
+  {
+    "approach1": "dspy_Bio_ClinicalBERT",
+    "approach2": "DSPy",
+    "f1_diff": -0.5030099502487563,
+    "precision_diff": -0.5773809523809523,
+    "recall_diff": -0.41500000000000004,
+    "winner": "DSPy",
+    "f1_diff_abs": 0.5030099502487563
+  },
+  {
+    "approach1": "dspy_Bio_ClinicalBERT",
+    "approach2": "direct_ClinicalBERT-AE-NER",
+    "f1_diff": -0.44562899786780374,
+    "precision_diff": -0.43087557603686644,
+    "recall_diff": -0.44000000000000006,
+    "winner": "direct_ClinicalBERT-AE-NER",
+    "f1_diff_abs": 0.44562899786780374
+  },
+  {
+    "approach1": "direct_Bio_ClinicalBERT",
+    "approach2": "Direct LLM",
+    "f1_diff": -0.38694444444444454,
+    "precision_diff": -0.41435897435897434,
+    "recall_diff": -0.33999999999999986,
+    "winner": "Direct LLM",
+    "f1_diff_abs": 0.38694444444444454
+  },
+  {
+    "approach1": "dspy_Bio_ClinicalBERT",
+    "approach2": "dspy_ClinicalBERT-AE-NER",
+    "f1_diff": -0.37420042643923224,
+    "precision_diff": -0.36635944700460843,
+    "recall_diff": -0.36,
+    "winner": "dspy_ClinicalBERT-AE-NER",
+    "f1_diff_abs": 0.37420042643923224
+  },
+  {
+    "approach1": "direct_Bio_ClinicalBERT",
+    "approach2": "DSPy",
+    "f1_diff": -0.3341666666666667,
+    "precision_diff": -0.43269230769230765,
+    "recall_diff": -0.21499999999999986,
+    "winner": "DSPy",
+    "f1_diff_abs": 0.3341666666666667
+  },
+  {
+    "approach1": "direct_Bio_ClinicalBERT",
+    "approach2": "direct_ClinicalBERT-AE-NER",
+    "f1_diff": -0.2767857142857142,
+    "precision_diff": -0.28618693134822176,
+    "recall_diff": -0.23999999999999988,
+    "winner": "direct_ClinicalBERT-AE-NER",
+    "f1_diff_abs": 0.2767857142857142
+  },
+  {
+    "approach1": "direct_Bio_ClinicalBERT",
+    "approach2": "dspy_ClinicalBERT-AE-NER",
+    "f1_diff": -0.20535714285714268,
+    "precision_diff": -0.22167080231596376,
+    "recall_diff": -0.1599999999999998,
+    "winner": "dspy_ClinicalBERT-AE-NER",
+    "f1_diff_abs": 0.20535714285714268
+  },
+  {
+    "approach1": "dspy_ClinicalBERT-AE-NER",
+    "approach2": "Direct LLM",
+    "f1_diff": -0.18158730158730185,
+    "precision_diff": -0.19268817204301059,
+    "recall_diff": -0.18000000000000005,
+    "winner": "Direct LLM",
+    "f1_diff_abs": 0.18158730158730185
+  },
+  {
+    "approach1": "dspy_Bio_ClinicalBERT",
+    "approach2": "direct_Bio_ClinicalBERT",
+    "f1_diff": -0.16884328358208955,
+    "precision_diff": -0.1446886446886447,
+    "recall_diff": -0.20000000000000018,
+    "winner": "direct_Bio_ClinicalBERT",
+    "f1_diff_abs": 0.16884328358208955
+  },
+  {
+    "approach1": "dspy_ClinicalBERT-AE-NER",
+    "approach2": "DSPy",
+    "f1_diff": -0.12880952380952404,
+    "precision_diff": -0.2110215053763439,
+    "recall_diff": -0.05500000000000005,
+    "winner": "DSPy",
+    "f1_diff_abs": 0.12880952380952404
+  },
+  {
+    "approach1": "direct_ClinicalBERT-AE-NER",
+    "approach2": "Direct LLM",
+    "f1_diff": -0.11015873015873034,
+    "precision_diff": -0.12817204301075258,
+    "recall_diff": -0.09999999999999998,
+    "winner": "Direct LLM",
+    "f1_diff_abs": 0.11015873015873034
+  },
+  {
+    "approach1": "dspy_ClinicalBERT-AE-NER",
+    "approach2": "direct_ClinicalBERT-AE-NER",
+    "f1_diff": -0.07142857142857151,
+    "precision_diff": -0.06451612903225801,
+    "recall_diff": -0.08000000000000007,
+    "winner": "direct_ClinicalBERT-AE-NER",
+    "f1_diff_abs": 0.07142857142857151
+  },
+  {
+    "approach1": "direct_ClinicalBERT-AE-NER",
+    "approach2": "DSPy",
+    "f1_diff": -0.05738095238095253,
+    "precision_diff": -0.1465053763440859,
+    "recall_diff": 0.025000000000000022,
+    "winner": "DSPy",
+    "f1_diff_abs": 0.05738095238095253
+  },
+  {
+    "approach1": "Direct LLM",
+    "approach2": "DSPy",
+    "f1_diff": 0.05277777777777781,
+    "precision_diff": -0.018333333333333313,
+    "recall_diff": 0.125,
+    "winner": "Direct LLM",
+    "f1_diff_abs": 0.05277777777777781
+  }
+]

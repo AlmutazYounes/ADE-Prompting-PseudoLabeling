@@ -1,0 +1,20 @@
+{"text": "On cessation of the injections, the retrocorneal membrane grew rapidly to involve the entire posterior cornea.", "entities": []}
+{"text": "Median patient age was 52 years.", "entities": []}
+{"text": "A whole brain irradiation was performed for 37.5Gy with a fraction size of 2.5Gy and gefitinib was replaced with erlotinib on the 5th day after radiation therapy commenced for disease progressing.", "entities": [{"start": 85, "end": 94, "label": "DRUG", "text": "gefitinib"}, {"start": 113, "end": 122, "label": "DRUG", "text": "erlotinib"}]}
+{"text": "Complex biochemical syndrome of hypocalcemia and hypoparathyroidism during cytotoxic treatment of an infant with leukemia.", "entities": [{"start": 32, "end": 44, "label": "ADE", "text": "hypocalcemia"}, {"start": 49, "end": 67, "label": "ADE", "text": "hypoparathyroidism"}]}
+{"text": "The fastidious organism grew only on buffered charcoal yeast extract agar and was confirmed as L. micdadei by gene sequence analysis.", "entities": []}
+{"text": "A patient who developed necrotizing pancreatitis after transcatheter arterial chemoembolization (TACE) for hepatocellular carcinoma (HCC) is presented.", "entities": [{"start": 24, "end": 48, "label": "ADE", "text": "necrotizing pancreatitis"}]}
+{"text": "RESULTS: Evidence of neurological improvement and rehabilitation potential after severe myelopathy due to intrathecal injection of doxorubicin.", "entities": [{"start": 131, "end": 142, "label": "DRUG", "text": "doxorubicin"}]}
+{"text": "Diagnosis is often difficult and is typically only made in patients without another explanation for deteriorating renal function, and is often based solely on improvement after drug withdrawal.", "entities": []}
+{"text": "An associated finding included a 2+ positive antinuclear antibody test with a titer of 1:320.", "entities": [{"start": 36, "end": 70, "label": "ADE", "text": "positive antinuclear antibody test"}]}
+{"text": "Patients in the intensive care unit seldom have mechanical small-bowel obstruction, and obstruction due to medication bezoars is even less common.", "entities": []}
+{"text": "CONCLUSION: This observation suggests that IFN in combination with ribavirin may offer an effective therapeutic option for liver transplant patients with severe recurrent hepatitis C.", "entities": [{"start": 67, "end": 76, "label": "DRUG", "text": "ribavirin"}]}
+{"text": "NCSE has not previously been reported in LBD.", "entities": []}
+{"text": "A less frequent side effect that is becoming more recognized is neurologic toxicity.", "entities": [{"start": 64, "end": 83, "label": "ADE", "text": "neurologic toxicity"}]}
+{"text": "The catheter had no blood return from either lumen for >1 month.", "entities": []}
+{"text": "Our cases constitute the most severe cases of benzarone hepatotoxicity reported so far, and comprise the first cases of (sub)fulminant hepatitis and cirrhosis related to benzarone.", "entities": [{"start": 46, "end": 55, "label": "DRUG", "text": "benzarone"}, {"start": 56, "end": 70, "label": "ADE", "text": "hepatotoxicity"}, {"start": 120, "end": 144, "label": "ADE", "text": "(sub)fulminant hepatitis"}, {"start": 149, "end": 158, "label": "ADE", "text": "cirrhosis"}, {"start": 170, "end": 179, "label": "DRUG", "text": "benzarone"}]}
+{"text": "CONCLUSIONS: Cough has been encountered commonly after the administration of ACE inhibitors.", "entities": [{"start": 13, "end": 18, "label": "ADE", "text": "Cough"}, {"start": 77, "end": 91, "label": "DRUG", "text": "ACE inhibitors"}]}
+{"text": "We discuss the limitations of conventional drug therapy and the lack of a sustained response to plasmapheresis.", "entities": []}
+{"text": "There was also an improvement of the mesenteric arterial flow patterns on Doppler studies.", "entities": []}
+{"text": "Especially in small prostates, care should be taken to avoid this condition.", "entities": []}
+{"text": "We describe two patients who developed hypophosphatemia as a consequence of this form of therapy.", "entities": [{"start": 39, "end": 55, "label": "ADE", "text": "hypophosphatemia"}]}

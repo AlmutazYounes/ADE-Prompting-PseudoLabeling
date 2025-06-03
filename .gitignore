@@ -21,6 +21,7 @@ var/
 *.egg
 
 # Virtual Environment
+.venv/
 venv/
 ENV/
 
@@ -87,3 +88,10 @@ temp/
 batch_processing
 batch_processing/
 batch_processing/*
+Local
+Local/
+Local/*
+
+Step_2_train_BERT_models/trained_models/*
+Step_2_train_BERT_models/trained_models/
+Step_2_train_BERT_models/trained_models/.gitkeep
