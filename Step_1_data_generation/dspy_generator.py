@@ -306,18 +306,11 @@ async def process_note(note: str, config: Dict, extractor: EnhancedEnsembleADEEx
         "entities": create_entities(note, drugs, adverse_events)
     }
     
-    # Create extracted format for human verification with enhanced metadata
+    # Create extracted format for human verification (clean format)
     extracted_data = {
         "text": note,
         "drugs": drugs,
-        "adverse_events": adverse_events,
-        "metadata": {
-            "drug_count": len(drugs),
-            "ade_count": len(adverse_events),
-            "has_temporal_indicators": any(word in note.lower() for word in ['after', 'following', 'since', 'during', 'while']),
-            "text_length": len(note),
-            "extraction_details": getattr(extractor, '_last_extraction_details', {})
-        }
+        "adverse_events": adverse_events
     }
     
     return ner_data, extracted_data

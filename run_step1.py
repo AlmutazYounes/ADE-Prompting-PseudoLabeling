@@ -28,10 +28,10 @@ AVAILABLE_DATA_SOURCES = ["direct", "dspy", "pipeline", "validator", "structured
 # By default, only direct is enabled
 ENABLED_SOURCES = {
     "direct": True,    # Direct LLM extraction (OpenAI API)
-    "dspy": False,      # DSPy-based extraction framework
-    "pipeline": False,  # Multi-step pipeline extraction approach
-    "validator": False, # Simple extraction with validation for missed entities
-    "structured": False # Structured DSPy-based extraction with position-aware entities
+    "dspy": True,      # DSPy-based extraction framework
+    "pipeline": True,  # Multi-step pipeline extraction approach
+    "validator": True, # Simple extraction with validation for missed entities
+    "structured": True # Structured DSPy-based extraction with position-aware entities
 }
 
 def main():
@@ -90,8 +90,10 @@ def main():
         try:
             # Dynamically import the generator module
             module_name = f"Step_1_data_generation.{source}_llm_generator"
-            if source in ["dspy", "structured"]:
-                module_name = f"Step_1_data_generation.{source}_generator"
+            if source == "dspy":
+                module_name = f"Step_1_data_generation.dspy_generator"
+            elif source == "structured":
+                module_name = f"Step_1_data_generation.structured_dspy_generator"
                 
             generator_module = importlib.import_module(module_name)
             

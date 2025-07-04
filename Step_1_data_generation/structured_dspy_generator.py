@@ -147,6 +147,14 @@ class StructuredDrugADEExtractor(dspy.Module):
         # Remove common formatting
         clean_text = text.replace('"', '').replace("'", "").strip()
         
+        # Check for empty list indicators with comments
+        if '[]' in clean_text and '//' in clean_text:
+            return []
+        
+        # Check for explicit empty indicators
+        if clean_text in ['[]', 'None', 'null', 'none', 'empty', '']:
+            return []
+        
         # Try to find items in a list-like format
         if "name:" in clean_text.lower() or "name :" in clean_text.lower():
             # Extract names from structured format with 'name:' labels
@@ -156,7 +164,7 @@ class StructuredDrugADEExtractor(dspy.Module):
                     parts = line.split(':', 1)
                     if len(parts) > 1:
                         name = parts[1].strip().strip(',').strip('"\'[]{}()').strip()
-                        if name:
+                        if name and not name.startswith('//') and name not in ['[]', 'None', 'null']:
                             result.append(name)
             return result
         
@@ -164,12 +172,12 @@ class StructuredDrugADEExtractor(dspy.Module):
         for sep in [',', ';', '\n']:
             if sep in clean_text:
                 items = [item.strip().strip('"\'[]{}()') for item in clean_text.split(sep)]
-                items = [item for item in items if item and not item.startswith('start_') and not item.startswith('end_')]
+                items = [item for item in items if item and not item.startswith('start_') and not item.startswith('end_') and not item.startswith('//') and item not in ['[]', 'None', 'null']]
                 if items:
                     return items
         
-        # If we can't parse it, return the whole string as one item if it's not empty
-        if clean_text and clean_text not in ['[]', 'None', 'null']:
+        # If we can't parse it, return the whole string as one item if it's not empty and not a comment
+        if clean_text and clean_text not in ['[]', 'None', 'null'] and not clean_text.startswith('//'):
             return [clean_text]
         
         return []
@@ -244,15 +252,11 @@ async def process_note(note: str, extractor: StructuredDrugADEExtractor) -> Tupl
         "entities": create_entities(note, drugs, adverse_events)
     }
     
-    # Create extracted format with metadata
+    # Create extracted format (clean format)
     extracted_data = {
         "text": note,
         "drugs": drugs,
-        "adverse_events": adverse_events,
-        "metadata": {
-            "extraction_approach": "structured_dspy",
-            "reasoning": getattr(extractor, '_detailed_reasoning', {})
-        }
+        "adverse_events": adverse_events
     }
     
     return ner_data, extracted_data

@@ -113,25 +113,11 @@ async def process_note_with_validation(note: str, config: Dict, semaphore: async
         "entities": create_entities(note, final_drugs, final_adverse_events)
     }
     
-    # Create extracted format with validation metadata
+    # Create extracted format (clean format)
     extracted_data = {
         "text": note,
         "drugs": final_drugs,
-        "adverse_events": final_adverse_events,
-        "validation_metadata": {
-            "initial_extraction": {
-                "drugs": initial_drugs,
-                "adverse_events": initial_adverse_events
-            },
-            "missed_entities": {
-                "drugs": missed_drugs,
-                "adverse_events": missed_adverse_events
-            },
-            "added_by_validator": {
-                "drugs_count": len(missed_drugs),
-                "adverse_events_count": len(missed_adverse_events)
-            }
-        }
+        "adverse_events": final_adverse_events
     }
     
     return ner_data, extracted_data
@@ -241,16 +227,8 @@ async def run_validator_extraction_async(notes: List[str], config: Dict) -> Tupl
                 stats["notes_with_ades"] += 1
                 stats["total_ades"] += len(ades)
             
-            # Track validation statistics
-            added_by_validator = validation_metadata.get("added_by_validator", {})
-            drugs_added = added_by_validator.get("drugs_count", 0)
-            ades_added = added_by_validator.get("adverse_events_count", 0)
-            
-            stats["drugs_added_by_validator"] += drugs_added
-            stats["ades_added_by_validator"] += ades_added
-            
-            if drugs_added > 0 or ades_added > 0:
-                stats["notes_improved_by_validator"] += 1
+            # Note: Validation statistics are simplified since we removed metadata
+            # to keep the output format clean
         
         ner_results.extend(batch_ner_results)
         extracted_results.extend(batch_extracted_results)

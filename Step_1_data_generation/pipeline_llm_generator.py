@@ -157,25 +157,11 @@ async def process_note_pipeline(note: str, config: Dict, semaphore: asyncio.Sema
         "entities": create_entities(note, final_drugs, final_adverse_events)
     }
     
-    # Create extracted format with pipeline metadata
+    # Create extracted format (clean format)
     extracted_data = {
         "text": note,
         "drugs": final_drugs,
-        "adverse_events": final_adverse_events,
-        "pipeline_metadata": {
-            "step1_candidates": {
-                "drugs": candidate_drugs,
-                "adverse_events": candidate_adverse_events
-            },
-            "step2_filtered": {
-                "drugs": filtered_drugs,
-                "adverse_events": filtered_adverse_events
-            },
-            "final_counts": {
-                "drugs": len(final_drugs),
-                "adverse_events": len(final_adverse_events)
-            }
-        }
+        "adverse_events": final_adverse_events
     }
     
     return ner_data, extracted_data
@@ -259,17 +245,8 @@ async def run_pipeline_extraction_async(notes: List[str], config: Dict) -> Tuple
         "total_drugs": 0,
         "total_ades": 0,
         "notes_with_drugs": 0,
-        "notes_with_ades": 0,
-        "avg_step1_candidates": 0,
-        "avg_step2_filtered": 0,
-        "avg_final_entities": 0
+        "notes_with_ades": 0
     }
-    
-    # Counters for pipeline statistics
-    total_step1_drugs = 0
-    total_step1_ades = 0
-    total_step2_drugs = 0
-    total_step2_ades = 0
     
     # Process in batches
     for i in tqdm(range(0, len(notes), processing_batch_size), desc="Processing batches"):
@@ -291,24 +268,11 @@ async def run_pipeline_extraction_async(notes: List[str], config: Dict) -> Tuple
                 stats["notes_with_ades"] += 1
                 stats["total_ades"] += len(ades)
             
-            # Track pipeline statistics
-            step1_candidates = pipeline_metadata.get("step1_candidates", {})
-            step2_filtered = pipeline_metadata.get("step2_filtered", {})
-            
-            total_step1_drugs += len(step1_candidates.get("drugs", []))
-            total_step1_ades += len(step1_candidates.get("adverse_events", []))
-            total_step2_drugs += len(step2_filtered.get("drugs", []))
-            total_step2_ades += len(step2_filtered.get("adverse_events", []))
+            # Note: Pipeline statistics are simplified since we removed metadata
+            # to keep the output format clean
         
         ner_results.extend(batch_ner_results)
         extracted_results.extend(batch_extracted_results)
-    
-    # Calculate averages for pipeline steps
-    num_notes = len(notes)
-    if num_notes > 0:
-        stats["avg_step1_candidates"] = (total_step1_drugs + total_step1_ades) / num_notes
-        stats["avg_step2_filtered"] = (total_step2_drugs + total_step2_ades) / num_notes
-        stats["avg_final_entities"] = (stats["total_drugs"] + stats["total_ades"]) / num_notes
     
     return ner_results, extracted_results, stats
 
@@ -391,12 +355,7 @@ def run_pipeline_generation(config: Dict) -> Dict:
     logger.info(f"  - Total ADEs found:         {stats['total_ades']}")
     logger.info(f"  - Avg entities per note:    {(stats['total_drugs']+stats['total_ades'])/len(notes):.2f}")
     
-    # Pipeline-specific statistics
-    logger.info(f"  - Avg Step 1 candidates:    {stats['avg_step1_candidates']:.2f}")
-    logger.info(f"  - Avg Step 2 filtered:      {stats['avg_step2_filtered']:.2f}")
-    logger.info(f"  - Avg Final entities:       {stats['avg_final_entities']:.2f}")
-    logger.info(f"  - Precision rate (2→3):     {(stats['total_drugs']+stats['total_ades'])/(stats['avg_step2_filtered']*len(notes))*100:.1f}% entities kept")
-    logger.info(f"  - Recall rate (1→2):        {(stats['avg_step2_filtered']*len(notes))/(stats['avg_step1_candidates']*len(notes))*100:.1f}% candidates kept")
+    # Pipeline statistics simplified (metadata removed for clean output format)
     
     logger.info(f"  - Processing time:          {processing_time:.1f} seconds ({len(notes)*3} API calls)")
     logger.info(f"  - Seconds per note:         {processing_time/len(notes):.2f} (3 steps per note)")
@@ -411,12 +370,7 @@ def run_pipeline_generation(config: Dict) -> Dict:
         "notes_with_ades": stats["notes_with_ades"],
         "total_drugs": stats["total_drugs"],
         "total_ades": stats["total_ades"],
-        "processing_time_seconds": processing_time,
-        "pipeline_statistics": {
-            "avg_step1_candidates": stats["avg_step1_candidates"],
-            "avg_step2_filtered": stats["avg_step2_filtered"],
-            "avg_final_entities": stats["avg_final_entities"]
-        }
+        "processing_time_seconds": processing_time
     }
 
 async def evaluate_pipeline_on_gold_async(config: Dict) -> Dict:
